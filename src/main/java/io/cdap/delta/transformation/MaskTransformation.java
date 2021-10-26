@@ -59,8 +59,18 @@ public class MaskTransformation implements Transformation {
     }
 
     srcColumn = splits[1];
-    fromPos = Integer.parseInt(splits[2]);
-    toPos = Integer.parseInt(splits[3]);
+    try {
+      fromPos = Integer.parseInt(splits[2]);
+    } catch (NumberFormatException e) {
+      throw new IllegalArgumentException("from_position is not an integer.", e);
+    }
+
+    try {
+      toPos = Integer.parseInt(splits[3]);
+    } catch (NumberFormatException e) {
+      throw new IllegalArgumentException("to_position is not an integer.", e);
+    }
+
     if (fromPos > toPos) {
       throw new IllegalArgumentException("to_position is greater than from_position.");
     }

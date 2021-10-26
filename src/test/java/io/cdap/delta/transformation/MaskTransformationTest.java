@@ -84,7 +84,7 @@ public class MaskTransformationTest {
     Directive directive = mock(Directive.class);
     when(directive.getWholeCommandLine()).thenReturn("mask column a 5");
     when(context.getDirective()).thenReturn(directive);
-    assertThrows(NumberFormatException.class, () -> mask.initialize(context));
+    assertThrows(IllegalArgumentException.class, () -> mask.initialize(context));
   }
 
   @Test
@@ -93,7 +93,7 @@ public class MaskTransformationTest {
     Directive directive = mock(Directive.class);
     when(directive.getWholeCommandLine()).thenReturn("mask column 0 a");
     when(context.getDirective()).thenReturn(directive);
-    assertThrows(NumberFormatException.class, () -> mask.initialize(context));
+    assertThrows(IllegalArgumentException.class, () -> mask.initialize(context));
   }
 
   @Test
