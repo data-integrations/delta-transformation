@@ -25,18 +25,35 @@ import io.cdap.transformation.api.MutableRowValue;
 import io.cdap.transformation.api.Transformation;
 import io.cdap.transformation.api.TransformationContext;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 /**
- * A Transformation that mask certain positions of the value
+ * Mask Transformation
+ *
+ * Mask by character substitution
+ * <p>
+ *  Substitution masking is generally used for masking credit card or SSN numbers.
+ *  This type of masking is fixed masking, where the pattern is applied on the
+ *  fixed length string.
+ *  “directive” : “mask col_name direction masking_character n”
+ *  Masks everything by substituting masking character except
+ *  first n characters in the given direction of the given column.
+ *  Masking directions can be right or left.
+ * </p>
  */
 @Plugin(type = Transformation.PLUGIN_TYPE)
 @Name(MaskTransformation.NAME)
 public class MaskTransformation implements Transformation {
 
   public static final String NAME = "mask";
-  public static final String MASK_CHARACTER = "*";
+  public static final String RIGHT_DIRECTION = "right";
+  public static final String LEFT_DIRECTION = "left";
   private String srcColumn;
-  private int fromPos;
-  private int toPos;
+  private String maskCharacter;
+  private int countN;
+  private String direction;
 
   @Override
   public void initialize(TransformationContext context) throws Exception {
@@ -49,30 +66,35 @@ public class MaskTransformation implements Transformation {
       throw new IllegalArgumentException("Directive command line is null.");
     }
     String[] splits = commandLine.split(" ");
-    if (splits.length != 4) {
-      throw new IllegalArgumentException("Directive should have 4 arguments. Usage: mask column_name from_position " +
-                                           "to_position.");
+    if (splits.length != 5) {
+      throw new IllegalArgumentException("Directive is missing some parts or containing more parts," +
+                                           "Expected: mask column_name direction mask_char n, " +
+                                           "given directive: " + commandLine);
     }
     if (!NAME.equals(splits[0])) {
       throw new IllegalArgumentException("Directive is not a mask transformation. Usage: mask column_name " +
-                                           "from_position to_position.");
+                                           "direction mask_char n.");
     }
 
     srcColumn = splits[1];
-    try {
-      fromPos = Integer.parseInt(splits[2]);
-    } catch (NumberFormatException e) {
-      throw new IllegalArgumentException("from_position is not an integer.", e);
+    direction = splits[2];
+    if (!(direction.equals(RIGHT_DIRECTION) || direction.equals(LEFT_DIRECTION))) {
+      throw new IllegalArgumentException(String.format("masking direction should be %s or %s",
+                                                       RIGHT_DIRECTION, LEFT_DIRECTION));
+    }
+    
+    maskCharacter = splits[3];
+    if (maskCharacter.length() != 1) {
+      throw new IllegalArgumentException(String.format("masking_character: %s is not a character", maskCharacter));
     }
 
     try {
-      toPos = Integer.parseInt(splits[3]);
+      countN = Integer.parseInt(splits[4]);
+      if (countN < 0) {
+        throw new IllegalArgumentException(String.format("n is not a whole number, given: %s", countN));
+      }
     } catch (NumberFormatException e) {
-      throw new IllegalArgumentException("to_position is not an integer.", e);
-    }
-
-    if (fromPos > toPos) {
-      throw new IllegalArgumentException("to_position is greater than from_position.");
+      throw new IllegalArgumentException("n is not an integer.", e);
     }
   }
 
@@ -87,28 +109,30 @@ public class MaskTransformation implements Transformation {
     if (value == null) {
       return;
     }
-    if (value.length() <= fromPos) {
+
+    if (value.length() <= countN) {
       return;
     }
     StringBuilder maskedValue = new StringBuilder(value);
-    if (value.length() < toPos) {
-      maskedValue.replace(fromPos, value.length(), Strings.repeat(MASK_CHARACTER, value.length() - fromPos));
-      rowValue.setColumnValue(srcColumn, maskedValue.toString());
-      return;
+    if (direction.equals(RIGHT_DIRECTION)) {
+      maskedValue.replace(0, value.length() - countN, Strings.repeat(maskCharacter, value.length() - countN));
+    } else {
+      maskedValue.replace(countN, value.length(), Strings.repeat(maskCharacter, value.length() - countN));
     }
-    maskedValue.replace(fromPos, toPos, Strings.repeat(MASK_CHARACTER, toPos - fromPos));
+
     rowValue.setColumnValue(srcColumn, maskedValue.toString());
-    return;
   }
 
   @Override
   public void transformSchema(MutableRowSchema rowSchema) throws Exception {
     //verify whether the filed is string
     Schema.Field field = rowSchema.getField(srcColumn);
-    if (!(Schema.of(Schema.Type.STRING).equals(field.getSchema()))) {
-      throw new IllegalArgumentException(String.format("Field %s is supposed to be string.", srcColumn));
+    Schema requiredSchema = Schema.of(Schema.Type.STRING);
+    if (requiredSchema.equals(field.getSchema()) ||
+      (field.getSchema().isNullable() && (requiredSchema.equals(field.getSchema().getNonNullable())))) {
+      return;
+      //no schema changes
     }
-    //no schema changes
-    return;
+    throw new IllegalArgumentException(String.format("Field %s is supposed to be string.", srcColumn));
   }
 }
