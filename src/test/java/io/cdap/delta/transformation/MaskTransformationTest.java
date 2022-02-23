@@ -73,7 +73,8 @@ public class MaskTransformationTest {
   void testInitializeWithIncorrectDirectiveName() throws Exception {
     TransformationContext context = mock(TransformationContext.class);
     Directive directive = mock(Directive.class);
-    when(directive.getWholeCommandLine()).thenReturn("masks column 0 5");
+
+    when(directive.getWholeCommandLine()).thenReturn("masking column right X 3");
     when(context.getDirective()).thenReturn(directive);
     assertThrows(IllegalArgumentException.class, () -> mask.initialize(context));
   }
@@ -82,7 +83,8 @@ public class MaskTransformationTest {
   void testInitializeWithIncorrectFirstArgumentType() throws Exception {
     TransformationContext context = mock(TransformationContext.class);
     Directive directive = mock(Directive.class);
-    when(directive.getWholeCommandLine()).thenReturn("mask column a 5");
+    // masking direction can be right or left
+    when(directive.getWholeCommandLine()).thenReturn("mask column top * 5");
     when(context.getDirective()).thenReturn(directive);
     assertThrows(IllegalArgumentException.class, () -> mask.initialize(context));
   }
@@ -91,17 +93,19 @@ public class MaskTransformationTest {
   void testInitializeWithIncorrectSecondArgumentType() throws Exception {
     TransformationContext context = mock(TransformationContext.class);
     Directive directive = mock(Directive.class);
-    when(directive.getWholeCommandLine()).thenReturn("mask column 0 a");
+    // masking character should be a string of length 1
+    when(directive.getWholeCommandLine()).thenReturn("mask column right abcd 3");
     when(context.getDirective()).thenReturn(directive);
     assertThrows(IllegalArgumentException.class, () -> mask.initialize(context));
   }
 
   @Test
-  void testInitializeWithFirstArgumentGreaterThanSecondArgument() throws Exception {
+  void testInitializeWithIncorrectThirdArgumentType() throws Exception {
     TransformationContext context = mock(TransformationContext.class);
     Directive directive = mock(Directive.class);
-    when(directive.getWholeCommandLine()).thenReturn("mask column 5 0");
+    when(directive.getWholeCommandLine()).thenReturn("mask column left * a", "mask column right * -3");
     when(context.getDirective()).thenReturn(directive);
+    assertThrows(IllegalArgumentException.class, () -> mask.initialize(context));
     assertThrows(IllegalArgumentException.class, () -> mask.initialize(context));
   }
 
@@ -109,15 +113,17 @@ public class MaskTransformationTest {
   void testTransformSchema() throws Exception {
     TransformationContext context = mock(TransformationContext.class);
     Directive directive = mock(Directive.class);
-    when(directive.getWholeCommandLine()).thenReturn("mask column 0 5");
+    when(directive.getWholeCommandLine()).thenReturn("mask column right * 5");
     when(context.getDirective()).thenReturn(directive);
     mask.initialize(context);
     MutableRowSchema schema = mock(MutableRowSchema.class);
-    when(schema.getField(matches("column"))).thenReturn(Schema.Field.of("column",
-                                                                        Schema.of(Schema.Type.STRING)));
+    when(schema.getField(matches("column"))).thenReturn(
+      Schema.Field.of("column", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("column", Schema.unionOf(Schema.of(Schema.Type.STRING), Schema.of(Schema.Type.NULL))));
+    mask.transformSchema(schema);
     mask.transformSchema(schema);
     verify(schema, never()).setField(any());
-    verify(schema, times(1)).getField(matches("column"));
+    verify(schema, times(2)).getField(matches("column"));
     verify(schema, never()).renameField(any(), any());
   }
 
@@ -125,7 +131,7 @@ public class MaskTransformationTest {
   void testTransformValue() throws Exception {
     TransformationContext context = mock(TransformationContext.class);
     Directive directive = mock(Directive.class);
-    when(directive.getWholeCommandLine()).thenReturn("mask column 0 5");
+    when(directive.getWholeCommandLine()).thenReturn("mask column right * 5", "mask column left * 4");
     when(context.getDirective()).thenReturn(directive);
     mask.initialize(context);
     MutableRowValue value = mock(MutableRowValue.class);
@@ -137,14 +143,22 @@ public class MaskTransformationTest {
     verify(value, times(1)).getColumnValue(matches("column"));
     verify(value, never()).renameColumn(any(), any());
     assertEquals("column", columnName.getValue());
-    assertEquals("*****fghijk", columnValue.getValue());
+    assertEquals("******ghijk", columnValue.getValue());
+
+    mask.initialize(context);
+    mask.transformValue(value);
+    verify(value, times(2)).setColumnValue(columnName.capture(), columnValue.capture());
+    verify(value, times(2)).getColumnValue(matches("column"));
+    verify(value, never()).renameColumn(any(), any());
+    assertEquals("column", columnName.getValue());
+    assertEquals("abcd*******", columnValue.getValue());
   }
 
   @Test
-  void testTransformValueFromGreaterThanLength() throws Exception {
+  void testTransformValueNGreaterThanLength() throws Exception {
     TransformationContext context = mock(TransformationContext.class);
     Directive directive = mock(Directive.class);
-    when(directive.getWholeCommandLine()).thenReturn("mask column 4 5");
+    when(directive.getWholeCommandLine()).thenReturn("mask column left * 5");
     when(context.getDirective()).thenReturn(directive);
     mask.initialize(context);
     MutableRowValue value = mock(MutableRowValue.class);
@@ -156,30 +170,10 @@ public class MaskTransformationTest {
   }
 
   @Test
-  void testTransformValueToGreaterThanLength() throws Exception {
-    TransformationContext context = mock(TransformationContext.class);
-    Directive directive = mock(Directive.class);
-    when(directive.getWholeCommandLine()).thenReturn("mask column 4 8");
-    when(context.getDirective()).thenReturn(directive);
-    mask.initialize(context);
-    MutableRowValue value = mock(MutableRowValue.class);
-    when(value.getColumnValue(matches("column"))).thenReturn("abcdefg");
-    ArgumentCaptor<String> columnName = ArgumentCaptor.forClass(String.class);
-    ArgumentCaptor<Object> columnValue = ArgumentCaptor.forClass(Object.class);
-    mask.transformValue(value);
-    verify(value, times(1)).setColumnValue(columnName.capture(), columnValue.capture());
-    verify(value, times(1)).getColumnValue(matches("column"));
-    verify(value, never()).renameColumn(any(), any());
-
-    assertEquals("column", columnName.getValue());
-    assertEquals("abcd***", columnValue.getValue());
-  }
-
-  @Test
   void testTransformNonStringField() throws Exception {
     TransformationContext context = mock(TransformationContext.class);
     Directive directive = mock(Directive.class);
-    when(directive.getWholeCommandLine()).thenReturn("mask column 0 5");
+    when(directive.getWholeCommandLine()).thenReturn("mask column right * 5");
     when(context.getDirective()).thenReturn(directive);
     mask.initialize(context);
     MutableRowSchema schema = mock(MutableRowSchema.class);
@@ -193,7 +187,7 @@ public class MaskTransformationTest {
   void testTransformNonStringValue() throws Exception {
     TransformationContext context = mock(TransformationContext.class);
     Directive directive = mock(Directive.class);
-    when(directive.getWholeCommandLine()).thenReturn("mask column 4 5");
+    when(directive.getWholeCommandLine()).thenReturn("mask column left * 5");
     when(context.getDirective()).thenReturn(directive);
     mask.initialize(context);
     MutableRowValue value = mock(MutableRowValue.class);
