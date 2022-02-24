@@ -14,7 +14,7 @@
  * the License.
  */
 
-package io.cdap.delta.transformation;
+package io.cdap.delta.transformation.plugins;
 
 import com.google.common.base.Strings;
 import io.cdap.cdap.api.annotation.Name;
@@ -24,10 +24,6 @@ import io.cdap.transformation.api.MutableRowSchema;
 import io.cdap.transformation.api.MutableRowValue;
 import io.cdap.transformation.api.Transformation;
 import io.cdap.transformation.api.TransformationContext;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 /**
  * Mask Transformation
@@ -65,7 +61,7 @@ public class MaskTransformation implements Transformation {
     if (commandLine == null) {
       throw new IllegalArgumentException("Directive command line is null.");
     }
-    String[] splits = commandLine.split(" ");
+    String[] splits = commandLine.split("\\s+");
     if (splits.length != 5) {
       throw new IllegalArgumentException("Directive is missing some parts or containing more parts," +
                                            "Expected: mask column_name direction mask_char n, " +
