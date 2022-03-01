@@ -14,7 +14,7 @@
  * the License.
  */
 
-package io.cdap.delta.transformation;
+package io.cdap.delta.transformation.plugins;
 
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
@@ -43,7 +43,7 @@ public class RenameTransformation implements Transformation {
     if (commandLine == null) {
       throw new IllegalArgumentException("Directive command line is null.");
     }
-    String[] splits = commandLine.split(" ");
+    String[] splits = commandLine.split("\\s+");
     if (splits.length != 3) {
       throw new IllegalArgumentException("Directive should have two arguments. Usage: rename old_column_name " +
                                             "new_column_name");

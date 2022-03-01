@@ -14,8 +14,7 @@
  * the License.
  */
 
-package io.cdap.delta.transformation;
-
+package io.cdap.delta.transformation.plugins;
 
 import io.cdap.transformation.api.Directive;
 import io.cdap.transformation.api.MutableRowSchema;

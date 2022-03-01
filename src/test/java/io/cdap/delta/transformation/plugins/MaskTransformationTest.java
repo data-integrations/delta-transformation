@@ -14,7 +14,7 @@
  * the License.
  */
 
-package io.cdap.delta.transformation;
+package io.cdap.delta.transformation.plugins;
 
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.transformation.api.Directive;

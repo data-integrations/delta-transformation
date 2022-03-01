@@ -56,9 +56,7 @@
   <properties>
     <delta.version>0.5.0-SNAPSHOT</delta.version>
     <slf4j.version>1.7.25</slf4j.version>
-    <avro.version>1.8.2</avro.version>
     <gcp.version>16.1.0</gcp.version>
-    <failsafe.version>2.3.3</failsafe.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
@@ -87,16 +85,6 @@
 
   <dependencies>
     <dependency>
-      <groupId>net.jodah</groupId>
-      <artifactId>failsafe</artifactId>
-      <version>${failsafe.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>log4j-over-slf4j</artifactId>
-      <version>${slf4j.version}</version>
-    </dependency>
-    <dependency>
       <groupId>io.cdap.delta</groupId>
       <artifactId>delta-api</artifactId>
       <version>${delta.version}</version>
@@ -106,11 +94,6 @@
           <groupId>junit</groupId>
         </exclusion>
       </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.avro</groupId>
-      <artifactId>avro</artifactId>
-      <version>${avro.version}</version>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
@@ -266,7 +249,7 @@
         </executions>
         <configuration>
           <instructions>
-            <_exportcontents>io.cdap.delta.transformation.*</_exportcontents>
+            <_exportcontents>io.cdap.delta.transformation.plugins.*</_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>
             <Embed-Directory>lib</Embed-Directory>
