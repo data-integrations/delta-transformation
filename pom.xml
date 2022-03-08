@@ -88,6 +88,7 @@
       <groupId>io.cdap.delta</groupId>
       <artifactId>delta-api</artifactId>
       <version>${delta.version}</version>
+      <scope>provided</scope>
       <exclusions>
         <exclusion>
           <artifactId>junit</artifactId>
