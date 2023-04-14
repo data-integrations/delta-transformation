@@ -22,7 +22,7 @@
 
   <groupId>io.cdap.delta</groupId>
   <artifactId>delta-transformation</artifactId>
-  <version>0.4.0</version>
+  <version>0.4.1-SNAPSHOT</version>
   <name>Delta Transformation plugins</name>
   <packaging>jar</packaging>
   <description>Delta Transformation plugins</description>
