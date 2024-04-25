@@ -54,7 +54,7 @@
   </scm>
 
   <properties>
-    <delta.version>0.9.0-SNAPSHOT</delta.version>
+    <delta.version>0.9.0</delta.version>
     <slf4j.version>1.7.25</slf4j.version>
     <gcp.version>16.1.0</gcp.version>
     <jacoco.version>0.8.8</jacoco.version>
@@ -267,7 +267,7 @@
         <version>1.1.0</version>
         <configuration>
           <cdapArtifacts>
-            <parent>system:delta-app[0.0.0,1.0.0-SNAPSHOT)</parent>
+            <parent>system:delta-app[0.9.0,1.0.0-SNAPSHOT)</parent>
           </cdapArtifacts>
         </configuration>
         <executions>
